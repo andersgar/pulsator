@@ -290,5 +290,5 @@ everything can be checked over USB alone.
 
 The phase logic is at the top of `src/main.cpp` under "State machine". The
 spurt pattern is `buildPlan()`, the heartbeat curve is in `runBuildup()`, and
-the colours are the `CRGB(...)` values in those functions, if someone wants to
+every colour derives from the hue setting through `baseColour()` and `lightColour()`, if someone wants to
 change the look.

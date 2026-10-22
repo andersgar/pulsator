@@ -152,6 +152,10 @@ static void wave(const CRGB& base, const CRGB& hi, float pos, float width, uint8
   }
 }
 
+// Show colours derived from the hue setting.
+static CRGB baseColour()  { return CHSV(settings.hue, 255, 255); }
+static CRGB lightColour() { return CHSV(settings.hue, 110, 255); }   // same hue, towards white
+
 static void fillScaled(const CRGB& c, uint8_t level) {
   CRGB s = c; s.nscale8(level);
   fill_solid(leds, numLeds(), s);
@@ -215,7 +219,7 @@ static uint32_t elapsed() { int32_t d = (int32_t)(millis() - phaseSince); return
 // ---- IDLE -------------------------------------------------------------------
 static void runIdle() {
   uint8_t b = beatsin8(8, 6, 28);
-  fillScaled(CRGB(255, 20, 60), b);
+  fillScaled(baseColour(), b);
   stripShow();
 }
 
@@ -244,19 +248,20 @@ static void runBuildup(uint32_t now) {
   float wavePos = (float)sinceBeat / beatMs;
   if (wavePos > 1) wavePos = 1;
   uint8_t floorLevel = 10 + (uint8_t)(70 * p);
-  CRGB base = CRGB(255, 30, 70);                                   // deep pink
-  CRGB hi   = blend(CRGB(255, 60, 90), CRGB(255, 200, 220), (uint8_t)(255 * p));  // towards hot white at the end
+  CRGB base = baseColour();
+  CRGB hi   = blend(baseColour(), lightColour(), (uint8_t)(255 * p));  // towards white at the end
   wave(base, hi, wavePos, 6 + 10 * p, floorLevel);
   // "lub-dub": a second, smaller swell early in the countdown
   if (p < 0.6f && sinceBeat > beatMs * 0.3f && sinceBeat < beatMs * 0.3f + 120) {
-    for (uint16_t i = 0; i < numLeds(); i++) leds[i] += CRGB(40, 5, 10);
+    CRGB d = baseColour(); d.nscale8(45);
+    for (uint16_t i = 0; i < numLeds(); i++) leds[i] += d;
   }
   stripShow();
 }
 
 // ---- HOLD ---------------------------------------------------------------------
 static void runHold() {
-  fillScaled(CRGB(255, 120, 160), 255);
+  fillScaled(lightColour(), 255);
   stripShow();
   if (elapsed() >= 1200) enter(Phase::CLIMAX);
 }
@@ -286,11 +291,11 @@ static void runClimax() {
     piezo::tone(spurtHz);
     float pos = (float)intoSpurt / spurtLen;
     uint8_t flash = intoSpurt < 60 ? 255 : 255 - (uint8_t)(200.0f * (intoSpurt - 60) / spurtLen);
-    wave(CRGB(255, 200, 220), CRGB::White, pos, 12, flash);
+    wave(lightColour(), CRGB::White, pos, 12, flash);
   } else {
     spurtHz = 0;
     piezo::off();
-    fillScaled(CRGB(255, 40, 80), 60);
+    fillScaled(baseColour(), 60);
   }
   stripShow();
 }
@@ -302,7 +307,7 @@ static void runAfterglow() {
   if (t >= total) { enter(Phase::IDLE); return; }
   uint8_t fade = 255 - (uint8_t)(255UL * t / total);
   uint8_t breath = beatsin8(10, 120, 255);
-  CRGB c = CRGB(255, 110, 30); c.nscale8(scale8(fade, breath));
+  CRGB c = CHSV(settings.hue + 20, 200, 255); c.nscale8(scale8(fade, breath));   // a warmer neighbour of the hue
   fill_solid(leds, numLeds(), c);
   stripShow();
 }
@@ -341,6 +346,20 @@ Status pulsatorStatus() {
   return s;
 }
 
+String ledSamples(uint8_t maxSamples) {
+  uint16_t n = numLeds();
+  uint8_t count = n < maxSamples ? n : maxSamples;
+  String out; out.reserve(count * 6);
+  char hex[7];
+  for (uint8_t k = 0; k < count; k++) {
+    uint16_t i = (uint32_t)k * n / count;
+    CRGB c = leds[i]; c.nscale8(settings.brightness);
+    snprintf(hex, sizeof(hex), "%02x%02x%02x", c.r, c.g, c.b);
+    out += hex;
+  }
+  return out;
+}
+
 // ---- bench tests ---------------------------------------------------------------
 void pulsatorTestPump(uint16_t ms) {
   if (ms > PUMP_MAX_ON_MS) ms = PUMP_MAX_ON_MS;
@@ -355,7 +374,7 @@ void pulsatorTestPump(uint16_t ms) {
 void pulsatorTestLights() {
   logLine("test: lights");
   for (uint16_t i = 0; i < numLeds(); i++) { fill_solid(leds, numLeds(), CRGB::Black); leds[i] = CRGB::White; stripShow(); delay(12); }
-  for (int k = 0; k < 2; k++) { fillScaled(CRGB(255, 30, 70), 255); stripShow(); delay(250); fillScaled(CRGB::Black, 0); stripShow(); delay(200); }
+  for (int k = 0; k < 2; k++) { fillScaled(baseColour(), 255); stripShow(); delay(250); fillScaled(CRGB::Black, 0); stripShow(); delay(200); }
 }
 void pulsatorTestPiezo() {
   logLine("test: piezo");

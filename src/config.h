@@ -23,6 +23,7 @@
 #define DEFAULT_SPURT_STRENGTH    100    // percent: scales how long each spurt keeps the pump on
 #define DEFAULT_NUM_LEDS          60     // up to MAX_LEDS
 #define DEFAULT_BRIGHTNESS        200    // 0..255
+#define DEFAULT_HUE               96     // FastLED hue 0..255: 0 red, 32 orange, 64 yellow, 96 green, 160 blue, 224 pink
 #define DEFAULT_PIEZO_ON          true
 #define DEFAULT_PIEZO_HZ          2800   // base tone, use the serial sweep to find the loud spot
 

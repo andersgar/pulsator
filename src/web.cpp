@@ -38,6 +38,8 @@ static const char PAGE[] PROGMEM = R"HTML(<!doctype html>
  pre{background:#000;color:#9f9;padding:8px;border-radius:8px;white-space:pre-wrap;word-break:break-all;font-size:.75rem;max-height:220px;overflow:auto;margin:6px 0 0}
  small{color:#8c7280}
  details summary{cursor:pointer;color:#b89aa8;padding:6px 0}
+ .strip{display:flex;gap:1px;height:18px;border-radius:4px;overflow:hidden;background:#000;margin-top:4px}
+ .strip>i{flex:1;display:block}
 </style></head><body>
 <h1>PULSATOR</h1>
 
@@ -57,7 +59,9 @@ static const char PAGE[] PROGMEM = R"HTML(<!doctype html>
 </div>
 
 <div class="card">
- <div class="phase">Debug: what the ESP is sending</div>
+ <details id="dbg"><summary class="phase">Debug: what the ESP is sending</summary>
+ <label>LED strip, live (<span id="nled"></span> LEDs)</label>
+ <div class="strip" id="strip"></div>
  <div class="kv" style="margin-top:8px">
   <b>Pump</b><span><span class="pump" id="pump">off</span> <small id="relay"></small></span>
   <b>LED strip</b><span><span class="sw" id="sw"></span><small id="led"></small></span>
@@ -73,6 +77,7 @@ static const char PAGE[] PROGMEM = R"HTML(<!doctype html>
  </div>
  <label>Event log</label>
  <pre id="log"></pre>
+ </details>
 </div>
 
 <div class="card">
@@ -90,6 +95,9 @@ static const char PAGE[] PROGMEM = R"HTML(<!doctype html>
    <div><label>LED count (1-300)</label><input name="leds" type="number" min="1" max="300"></div>
    <div><label>Brightness (0-255)</label><input name="bri" type="number" min="0" max="255"></div>
   </div>
+  <label>Colour (hue 0-255: 0 red, 32 orange, 64 yellow, 96 green, 160 blue, 224 pink)</label>
+  <input name="hue" type="range" min="0" max="255" oninput="huePreview(this.value)">
+  <div class="sw" id="hueprev" style="height:14px"></div>
   <div class="two">
    <div><label>Piezo</label><select name="pz"><option value="1">on</option><option value="0">off</option></select></div>
    <div><label>Piezo base tone (Hz)</label><input name="pzhz" type="number" min="200" max="8000"></div>
@@ -127,15 +135,19 @@ async function poll(){
   $('spurt').textContent=s.spurt?s.spurt+' of '+s.spurts:'-';
   $('total').textContent=(s.pumpTotal/1000).toFixed(1)+' s';
   $('log').textContent=s.log;
+  $('nled').textContent=s.leds;
+  if(s.strip&&$('dbg').open){const st=$('strip');const n=s.strip.length/6;if(st.children.length!==n){st.innerHTML='<i></i>'.repeat(n)}for(let i=0;i<n;i++)st.children[i].style.background='#'+s.strip.substr(i*6,i*6+6>s.strip.length?0:6)}
   // local heartbeat animation at the reported beat interval
   if(s.phase==='BUILDUP'&&s.beat){ if(s.beat!==lastBeatMs){lastBeatMs=s.beat; clearInterval(heartTimer); heartTimer=setInterval(thump,s.beat);} }
   else if(s.phase==='CLIMAX'){ if(s.pump) thump(); }
   else { clearInterval(heartTimer); heartTimer=null; lastBeatMs=0; }
  }catch(e){$('phase').textContent='no contact';$('phase').className='phase'}
 }
+function huePreview(h){$('hueprev').style.background='hsl('+(h*360/255)+' 100% 50%)'}
 async function loadSettings(){
  const s=await (await fetch('/api/settings')).json();
  for(const k in s){const el=f.elements[k]; if(el) el.value=s[k]}
+ huePreview(s.hue);
 }
 async function saveSettings(){
  const body=new URLSearchParams(new FormData(f));
@@ -173,6 +185,7 @@ static void handleStatus() {
   j += "\"r\":" + String(s.ledR) + ",\"g\":" + String(s.ledG) + ",\"b\":" + String(s.ledB) + ",";
   j += "\"bri\":" + String(s.ledBrightness) + ",\"leds\":" + String(settings.numLeds) + ",";
   j += "\"hz\":" + String(s.piezoHz) + ",";
+  j += "\"strip\":\"" + ledSamples(60) + "\",";
   j += "\"pumpTotal\":" + String(s.pumpOnTotalMs) + ",";
   j += "\"log\":\"" + jsonEsc(logTail(20)) + "\"";
   j += "}";
@@ -187,6 +200,7 @@ static void handleSettingsGet() {
   j += "\"sps\":" + String(settings.spurtStrength) + ",";
   j += "\"leds\":" + String(settings.numLeds) + ",";
   j += "\"bri\":" + String(settings.brightness) + ",";
+  j += "\"hue\":" + String(settings.hue) + ",";
   j += "\"pz\":\"" + String(settings.piezoOn ? 1 : 0) + "\",";
   j += "\"pzhz\":" + String(settings.piezoHz) + ",";
   j += "\"rlow\":\"" + String(settings.relayActiveLow ? 1 : 0) + "\",";
@@ -202,6 +216,7 @@ static void handleSettingsPost() {
   if (server.hasArg("sps"))  settings.spurtStrength = server.arg("sps").toInt();
   if (server.hasArg("leds")) settings.numLeds       = server.arg("leds").toInt();
   if (server.hasArg("bri"))  settings.brightness    = server.arg("bri").toInt();
+  if (server.hasArg("hue"))  settings.hue           = server.arg("hue").toInt();
   if (server.hasArg("pz"))   settings.piezoOn       = server.arg("pz") == "1";
   if (server.hasArg("pzhz")) settings.piezoHz       = server.arg("pzhz").toInt();
   if (server.hasArg("rlow")) settings.relayActiveLow= server.arg("rlow") == "1";

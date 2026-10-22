@@ -32,6 +32,9 @@ void pulsatorTestPump(uint16_t ms);
 void pulsatorTestLights();
 void pulsatorTestPiezo();
 
+// Up to N evenly spaced samples of the strip as "rrggbb" hex, for the page's strip view.
+String ledSamples(uint8_t maxSamples);
+
 // Event log ring buffer, newest last. Lines are "t=12.345 message".
 void   logLine(const String& s);
 String logTail(uint8_t maxLines);

@@ -21,7 +21,7 @@ static void clampAll() {
 
 void settingsResetToDefaults() {
   settings = Settings{DEFAULT_RELAY_ACTIVE_LOW, DEFAULT_DRY_RUN, DEFAULT_BUILDUP_S, DEFAULT_AFTERGLOW_S,
-                      DEFAULT_SPURTS, DEFAULT_SPURT_STRENGTH, DEFAULT_NUM_LEDS, DEFAULT_BRIGHTNESS,
+                      DEFAULT_SPURTS, DEFAULT_SPURT_STRENGTH, DEFAULT_NUM_LEDS, DEFAULT_BRIGHTNESS, DEFAULT_HUE,
                       DEFAULT_PIEZO_ON, DEFAULT_PIEZO_HZ};
   settingsSave();
 }
@@ -40,6 +40,7 @@ void settingsLoad() {
   settings.spurtStrength  = prefs.getUChar ("sps",   DEFAULT_SPURT_STRENGTH);
   settings.numLeds        = prefs.getUShort("leds",  DEFAULT_NUM_LEDS);
   settings.brightness     = prefs.getUChar ("bri",   DEFAULT_BRIGHTNESS);
+  settings.hue            = prefs.getUChar ("hue",   DEFAULT_HUE);
   settings.piezoOn        = prefs.getBool  ("pz",    DEFAULT_PIEZO_ON);
   settings.piezoHz        = prefs.getUShort("pzhz",  DEFAULT_PIEZO_HZ);
   prefs.end();
@@ -57,6 +58,7 @@ void settingsSave() {
   prefs.putUChar ("sps",   settings.spurtStrength);
   prefs.putUShort("leds",  settings.numLeds);
   prefs.putUChar ("bri",   settings.brightness);
+  prefs.putUChar ("hue",   settings.hue);
   prefs.putBool  ("pz",    settings.piezoOn);
   prefs.putUShort("pzhz",  settings.piezoHz);
   prefs.end();

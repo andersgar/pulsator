@@ -10,6 +10,7 @@ struct Settings {
   uint8_t  spurtStrength;   // percent
   uint16_t numLeds;
   uint8_t  brightness;
+  uint8_t  hue;             // FastLED hue 0..255
   bool     piezoOn;
   uint16_t piezoHz;
 };
